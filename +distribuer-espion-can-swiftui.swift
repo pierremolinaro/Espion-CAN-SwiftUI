@@ -1,0 +1,288 @@
+#! /usr/bin/swift
+//------------------------------------------------------------------------------
+
+import Foundation
+
+//------------------------------------------------------------------------------
+// Product Kind
+//------------------------------------------------------------------------------
+
+enum ProductKind {
+  case release
+  case debug
+
+  var string : String {
+    switch self {
+      case .release : return "Release"
+      case .debug   : return "Debug"
+    }
+  }
+}
+
+//------------------------------------------------------------------------------
+
+let BUILD_KIND = ProductKind.release
+
+//------------------------------------------------------------------------------
+// Version Espion
+//------------------------------------------------------------------------------
+
+let VERSION_ESPION = "1.0.0"
+let MAC_OS_MINIMUM_VERSION = "26"
+let NOTES : [String] = [
+  "Première version"
+]
+let BUGFIXES : [String] = [
+  "Correction dimension des fichiers Gerber produits"
+]
+let CHANGES : [String] = [
+]
+let NEWS : [String] = [
+]
+
+//------------------------------------------------------------------------------
+//   FOR PRINTING IN COLOR
+//------------------------------------------------------------------------------
+
+let BLACK   = "\u{1B}[30m"
+let RED     = "\u{1B}[31m"
+let GREEN   = "\u{1B}[32m"
+let YELLOW  = "\u{1B}[33m"
+let BLUE    = "\u{1B}[34m"
+let MAGENTA = "\u{1B}[35m"
+let CYAN    = "\u{1B}[36m"
+let ENDC    = "\u{1B}[0m"
+let BOLD    = "\u{1B}[1m"
+let UNDERLINE = "\u{1B}[4m"
+let BOLD_MAGENTA = BOLD + MAGENTA
+let BOLD_BLUE = BOLD + BLUE
+let BOLD_GREEN = BOLD + GREEN
+let BOLD_RED = BOLD + RED
+
+//------------------------------------------------------------------------------
+//   runCommand
+//------------------------------------------------------------------------------
+
+func runCommand (_ cmd : String, _ args : [String]) {
+  var str = "+ " + cmd
+  for s in args {
+    str += " " + s
+  }
+  print (BOLD_MAGENTA + str + ENDC)
+  let task = Process.launchedProcess (launchPath: cmd, arguments: args)
+  task.waitUntilExit ()
+  let status = task.terminationStatus
+  if status != 0 {
+    print (BOLD_RED + "Command line tool '\(cmd)' returns error \(status)" + ENDC)
+    exit (status)
+  }
+}
+
+//------------------------------------------------------------------------------
+//   runHiddenCommand
+//------------------------------------------------------------------------------
+
+func runHiddenCommand (_ cmd : String, _ args : [String]) -> String {
+  var str = "+ " + cmd
+  for s in args {
+    str += " " + s
+  }
+  print (BOLD_MAGENTA + str + ENDC)
+//--- Define task
+  let task = Process ()
+  task.launchPath = cmd
+  task.arguments = args
+  let pipe = Pipe ()
+  task.standardOutput = pipe
+  task.standardError = pipe
+  let fileHandle = pipe.fileHandleForReading
+//--- Launch
+  task.launch ()
+  var data = Data ()
+  var hasData = true
+  while hasData {
+    let newData = fileHandle.availableData
+    hasData = newData.count > 0
+    data.append (newData)
+  }
+  task.waitUntilExit ()
+  let status = task.terminationStatus
+  if status != 0 {
+    print (BOLD_RED + "Error \(status)" + ENDC)
+    exit (status)
+  }
+  return String (data: data, encoding: .ascii)!
+}
+
+//------------------------------------------------------------------------------
+//   dictionaryFromJsonFile
+//------------------------------------------------------------------------------
+
+struct VersionDescriptor : Codable {
+  var bugfixes = [String] ()
+  var notes = [String] ()
+  var length = ""
+  var edSignature = ""
+  var news = [String] ()
+  var changes = [String] ()
+  var date = ""
+  var contents = ""
+  var osmin = ""
+}
+
+//------------------------------------------------------------------------------
+
+let fm = FileManager ()
+//-------------------- Get script absolute path
+let scriptDir = URL (fileURLWithPath: CommandLine.arguments [0]).deletingLastPathComponent ().path
+print ("scriptDir \(scriptDir)")
+runCommand (
+ "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+ ["-version"]
+)
+//-------------------- Supprimer une distribution existante
+let DISTRIBUTION_DIR = scriptDir + "/../ESPION_DISTRIBUTION_" + VERSION_ESPION
+while fm.fileExists (atPath: DISTRIBUTION_DIR) {
+  runCommand ("/bin/rm", ["-fr", DISTRIBUTION_DIR])
+}
+//-------------------- Créer le répertoire contenant la distribution
+runCommand ("/bin/mkdir", [DISTRIBUTION_DIR])
+fm.changeCurrentDirectoryPath (DISTRIBUTION_DIR)
+//-------------------- Importer Espion
+let ESPION_DIR = "Espion-dev"
+runCommand ("/bin/rm", ["-fr", ESPION_DIR])
+runCommand ("/usr/bin/git", ["clone", "--depth=1", "https://github.com/pierremolinaro/Espion-CAN-SwiftUI.git"])
+fm.changeCurrentDirectoryPath (DISTRIBUTION_DIR + "/" + ESPION_DIR)
+//-------------------- Obtenir l'année
+let ANNEE = Calendar.current.component (.year, from: Date ())
+print ("ANNÉE : \(ANNEE)")
+do{
+//-------------------- Obtenir le SHA du dernier commit
+  var sha = runHiddenCommand ("/usr/bin/git", ["rev-parse", "--short", "HEAD"])
+  _ = sha.removeLast () // Remove trailing LF
+//  let sha = runHiddenCommand ("/usr/bin/git", ["log", "-n1", "--format=format:\"%H\""])
+//  Swift.print ("sha \(sha)")
+//-------------------- Écrire le SHA
+//  let fileRelativePath = "espion-can-swiftui/resources/Credits.rtf"
+//  let str : String = try! String (contentsOf: URL (fileURLWithPath: fileRelativePath), encoding: .utf8)
+//  let components = str.components (separatedBy: "$SHA_GITHUB$")
+//  let str2 = components.joined (separator: sha)
+//  try! str2.write (to: URL (fileURLWithPath: fileRelativePath), atomically: true, encoding: .utf8)
+//-------------------- Obtenir le numéro de build
+  let plistFileFullPath = DISTRIBUTION_DIR + "/" + ESPION_DIR + "/espion-can-swiftui/Info.plist"
+  let data : Data = try Data (contentsOf: URL (fileURLWithPath: plistFileFullPath))
+  var plistDictionary : [String : Any]
+  if let d = try PropertyListSerialization.propertyList (from: data, format: nil) as? [String : Any] {
+    plistDictionary = d
+  }else{
+    print (RED + "line \(#line) : object is not a dictionary" + ENDC)
+    exit (1)
+  }
+//--- Date de construction
+  let dateConstruction = Date ()
+  let dateFormatter = DateFormatter()
+  dateFormatter.locale = Locale(identifier: "en_US")
+  dateFormatter.setLocalizedDateFormatFromTemplate("MMMMdYYYY") // set template after setting locale
+//--- Mettre à jour les numéros de version dans la plist
+  plistDictionary ["CFBundleVersion"] = VERSION_ESPION + ", " + dateFormatter.string (from: dateConstruction)
+  plistDictionary ["CFBundleShortVersionString"] = VERSION_ESPION
+  let plistNewData = try PropertyListSerialization.data (fromPropertyList: plistDictionary, format: .binary, options: 0)
+  try plistNewData.write (to: URL (fileURLWithPath: plistFileFullPath), options: .atomic)
+//-------------------- Compiler le projet Xcode
+  let débutCompilation = Date ()
+  runCommand ("/bin/rm", ["-fr", "build"])
+  runCommand (
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+    [ "-target", "Espion-" + BUILD_KIND.string,
+      "-configuration", BUILD_KIND.string,
+      "ONLY_ACTIVE_ARCH=YES", "ARCHS=arm64",
+      "-verbose"
+    ]
+  )
+  let duréeCompilation = Date ().timeIntervalSince (débutCompilation)
+  let PRODUCT_NAME : String
+  switch BUILD_KIND {
+  case .debug :
+    PRODUCT_NAME = "Espion-Debug"
+  case .release:
+    PRODUCT_NAME = "Espion"
+  }
+//-------------------- Copier l'application dans la racine du répertoire de distribution
+  runCommand ("/bin/cp", ["-r", "build/" + BUILD_KIND.string + "/" + PRODUCT_NAME + ".app", DISTRIBUTION_DIR])
+//-------------------- Construction package
+  let packageFile = PRODUCT_NAME + "-" + VERSION_ESPION + ".pkg"
+  runCommand ("/usr/bin/productbuild", ["--component-compression", "auto", "--component", "build/" + BUILD_KIND.string + "/" + PRODUCT_NAME + ".app", "/Applications", packageFile])
+  runCommand ("/bin/cp", [packageFile, DISTRIBUTION_DIR])
+//-------------------- Créer l'archive
+  let nomArchive = PRODUCT_NAME + "-" + VERSION_ESPION
+  runCommand ("/bin/mkdir", [nomArchive])
+//  runCommand ("/bin/cp", [packageFile, nomArchive])
+  runCommand ("/bin/ln", ["-s", "/Applications", nomArchive + "/Applications"])
+  runCommand ("/bin/mv", [DISTRIBUTION_DIR + "/" + PRODUCT_NAME + ".app", nomArchive])
+  runCommand ("/usr/bin/hdiutil", ["create", "-srcfolder", nomArchive, "../" + nomArchive + ".dmg", "-format", "ULMO"]) // , "-fs", "HFS+"
+//-------------------- Supprimer le fichier .pkg
+//  runCommand ("/bin/rm", [DISTRIBUTION_DIR + "/" + packageFile])
+//-------------------- Calculer la clé de la somme de contrôle de l'archive DMG pour Sparkle
+  let signature = runHiddenCommand ("./distribution-espion/sign_update", ["../" + nomArchive + ".dmg"])
+  // print ("cleArchive '\(signature)'")
+  var edSignature = ""
+  var dmgLength = ""
+  var ok = false
+  let c1 = signature.components (separatedBy: "sparkle:edSignature=\"")
+  if (c1.count == 2) && (c1 [0] == "") {
+    let c2 = c1 [1].components (separatedBy: "\" length=\"")
+    if c2.count == 2 {
+      edSignature = c2 [0]
+      let c3 = c2 [1].components (separatedBy: "\"\n")
+      if c3.count == 2 {
+        dmgLength = c3 [0]
+        ok = true
+      }
+    }
+  }
+  if ok {
+    print ("edSignature: \(edSignature) ")
+    print ("length: \(dmgLength) ")
+  }else{
+    print (RED + "Error line \(#line)" + ENDC)
+    exit (1)
+  }
+//-------------------- Construire le fichier json
+  var versionDescriptor = VersionDescriptor ()
+  versionDescriptor.edSignature = edSignature
+  versionDescriptor.length = dmgLength
+  versionDescriptor.notes = NOTES
+  versionDescriptor.bugfixes = BUGFIXES
+  versionDescriptor.changes = CHANGES
+  versionDescriptor.news = NEWS
+  versionDescriptor.date = ISO8601DateFormatter ().string (from: dateConstruction)
+  versionDescriptor.osmin = MAC_OS_MINIMUM_VERSION
+  versionDescriptor.contents = "application"
+  let encoder = JSONEncoder ()
+  encoder.outputFormatting = .prettyPrinted
+  let jsonData = try encoder.encode (versionDescriptor)
+  let nomJSON = DISTRIBUTION_DIR + "/" + PRODUCT_NAME + "-" + VERSION_ESPION + ".json"
+  try jsonData.write (to: URL (fileURLWithPath: nomJSON), options: .atomic)
+//--- Vérififer l'existence de certificats
+//  runCommand ("security", ["find-identity", "-p", "basic", "-v"])
+//--- Vérifier la signature
+  let argumentsSignatureCode = [
+    "-dv",
+//    "--digest-algorithm=sha1,sha256",
+    "--verbose=4",
+    DISTRIBUTION_DIR + "/" + ESPION_DIR + "/build/" + BUILD_KIND.string + "/" + PRODUCT_NAME + ".app"
+  ]
+  runCommand ("/usr/bin/codesign", argumentsSignatureCode)
+//--- Supprimer les répertoires intermédiaires
+  fm.changeCurrentDirectoryPath (DISTRIBUTION_DIR)
+  while fm.fileExists (atPath: DISTRIBUTION_DIR + "/" + ESPION_DIR) {
+    runCommand ("/bin/rm", ["-fr", DISTRIBUTION_DIR + "/" + ESPION_DIR])
+  }
+  //---
+  let durée = Int (duréeCompilation)
+  print ("Durée de compilation : \(durée / 60) min \(durée % 60) s")
+}catch (let error) {
+  print ("Exception \(error)")
+}
+
+//------------------------------------------------------------------------------

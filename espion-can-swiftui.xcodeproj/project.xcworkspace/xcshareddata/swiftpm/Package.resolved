@@ -1,0 +1,23 @@
+{
+  "originHash" : "05b0b982bb9364b1b8e57625b87ed78943154b874e4f379b91964ac9ea0b0247",
+  "pins" : [
+    {
+      "identity" : "sparkle",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sparkle-project/Sparkle",
+      "state" : {
+        "revision" : "eef1a539a373c1f1a320624b1130fc5de7b2e100",
+        "version" : "2.10.0"
+      }
+    },
+    {
+      "identity" : "swift-package-pico-connection",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pierremolinaro/Swift-Package-Pico-Connection",
+      "state" : {
+        "revision" : "2146fd6d3065fd90b85e973eb990d23830a17d35"
+      }
+    }
+  ],
+  "version" : 3
+}
