@@ -60,6 +60,25 @@ let BOLD_GREEN = BOLD + GREEN
 let BOLD_RED = BOLD + RED
 
 //------------------------------------------------------------------------------
+//   Remove Directory
+//------------------------------------------------------------------------------
+
+func removeDirectory (_ inDirectory : String) {
+  print (BOLD_MAGENTA + "Remove directory \"" + inDirectory + "\"" + ENDC)
+  var loop = true
+  while loop {
+    print (BOLD_MAGENTA + "+ /bin/rm -fr " + inDirectory + ENDC)
+    let task = Process.launchedProcess (
+      launchPath: "/bin/rm",
+      arguments: ["-fr", inDirectory]
+    )
+    task.waitUntilExit ()
+    let status = task.terminationStatus
+    loop = status != 0
+  }
+}
+
+//------------------------------------------------------------------------------
 //   runCommand
 //------------------------------------------------------------------------------
 
@@ -141,10 +160,11 @@ runCommand (
  ["-version"]
 )
 //-------------------- Supprimer une distribution existante
-let DISTRIBUTION_DIR = scriptDir + "/../ESPION_DISTRIBUTION_" + VERSION_ESPION
-while fm.fileExists (atPath: DISTRIBUTION_DIR) {
-  runCommand ("/bin/rm", ["-fr", DISTRIBUTION_DIR])
-}
+let DISTRIBUTION_DIR = scriptDir + "/../Z_ESPION_DISTRIBUTION_" + VERSION_ESPION
+removeDirectory (DISTRIBUTION_DIR)
+//while fm.fileExists (atPath: DISTRIBUTION_DIR) {
+//  runCommand ("/bin/rm", ["-fr", DISTRIBUTION_DIR])
+//}
 //-------------------- Créer le répertoire contenant la distribution
 runCommand ("/bin/mkdir", [DISTRIBUTION_DIR])
 fm.changeCurrentDirectoryPath (DISTRIBUTION_DIR)
@@ -180,9 +200,9 @@ do{
   }
 //--- Date de construction
   let dateConstruction = Date ()
-  let dateFormatter = DateFormatter()
-  dateFormatter.locale = Locale(identifier: "en_US")
-  dateFormatter.setLocalizedDateFormatFromTemplate("MMMMdYYYY") // set template after setting locale
+  let dateFormatter = DateFormatter ()
+  dateFormatter.locale = Locale (identifier: "en_US")
+  dateFormatter.setLocalizedDateFormatFromTemplate ("MMMMdYYYY") // set template after setting locale
 //--- Mettre à jour les numéros de version dans la plist
   plistDictionary ["CFBundleVersion"] = VERSION_ESPION + ", " + dateFormatter.string (from: dateConstruction)
   plistDictionary ["CFBundleShortVersionString"] = VERSION_ESPION
@@ -191,27 +211,32 @@ do{
 //-------------------- Compiler le projet Xcode
   let débutCompilation = Date ()
   runCommand ("/bin/rm", ["-fr", "build"])
+  let jsonString = runHiddenCommand (
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+    ["-list", "-json"]
+  )
+  print (jsonString)
   runCommand (
     "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
-    [ "-target", "espion-can-swiftui",
-      "-configuration", BUILD_KIND.string,
-//      "ONLY_ACTIVE_ARCH=YES", "ARCHS=arm64",
-      "-verbose"
+    [ "-scheme", "espion-can-swiftui",
+      "-target", "espion-can-swiftui",
+      "-arch", "arm64",
+      "-derivedDataPath", "XCode-DerivedData-Build"
     ]
   )
   let duréeCompilation = Date ().timeIntervalSince (débutCompilation)
   let PRODUCT_NAME : String
   switch BUILD_KIND {
   case .debug :
-    PRODUCT_NAME = "Espion-Debug"
+    PRODUCT_NAME = "espion-can-swiftui"
   case .release:
-    PRODUCT_NAME = "Espion"
+    PRODUCT_NAME = "espion-can-swiftui"
   }
 //-------------------- Copier l'application dans la racine du répertoire de distribution
-  runCommand ("/bin/cp", ["-r", "build/" + BUILD_KIND.string + "/" + PRODUCT_NAME + ".app", DISTRIBUTION_DIR])
+  runCommand ("/bin/cp", ["-r", "XCode-DerivedData-Build/Build/Products/Debug/" + PRODUCT_NAME + ".app", DISTRIBUTION_DIR])
 //-------------------- Construction package
   let packageFile = PRODUCT_NAME + "-" + VERSION_ESPION + ".pkg"
-  runCommand ("/usr/bin/productbuild", ["--component-compression", "auto", "--component", "build/" + BUILD_KIND.string + "/" + PRODUCT_NAME + ".app", "/Applications", packageFile])
+  runCommand ("/usr/bin/productbuild", ["--component-compression", "auto", "--component", "XCode-DerivedData-Build/Build/Products/Debug/" + PRODUCT_NAME + ".app", "/Applications", packageFile])
   runCommand ("/bin/cp", [packageFile, DISTRIBUTION_DIR])
 //-------------------- Créer l'archive
   let nomArchive = PRODUCT_NAME + "-" + VERSION_ESPION
@@ -270,7 +295,7 @@ do{
     "-dv",
 //    "--digest-algorithm=sha1,sha256",
     "--verbose=4",
-    DISTRIBUTION_DIR + "/" + ESPION_DIR + "/build/" + BUILD_KIND.string + "/" + PRODUCT_NAME + ".app"
+    DISTRIBUTION_DIR + "/" + ESPION_DIR + "/XCode-DerivedData-Build/Build/Products/Debug/" + PRODUCT_NAME + ".app"
   ]
   runCommand ("/usr/bin/codesign", argumentsSignatureCode)
 //--- Supprimer les répertoires intermédiaires
