@@ -62,21 +62,6 @@
       ],
       "package-product-members": [
         {
-          "product-name": "PicoConnection",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
-          "product-name": "PicoConnection",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
-          "product-name": "PicoConnection",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
-          "product-name": "PicoConnection",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
-          "product-name": "PicoConnection",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
           "package": "Sparkle",
           "product-name": "Sparkle",
           "build-phase": { "build-phase": "frameworks" },
