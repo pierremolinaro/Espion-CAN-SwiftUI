@@ -392,8 +392,9 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pierremolinaro/Swift-Package-Pico-Connection";
 			requirement = {
-				kind = revision;
-				revision = 2146fd6d3065fd90b85e973eb990d23830a17d35;
+				kind = versionRange;
+				maximumVersion = 2.0.0;
+				minimumVersion = 1.0.0;
 			};
 		};
 		CFD177B43068300F00AFD607 /* XCRemoteSwiftPackageReference "Sparkle" */ = {

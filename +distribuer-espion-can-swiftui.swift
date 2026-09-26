@@ -149,7 +149,7 @@ while fm.fileExists (atPath: DISTRIBUTION_DIR) {
 runCommand ("/bin/mkdir", [DISTRIBUTION_DIR])
 fm.changeCurrentDirectoryPath (DISTRIBUTION_DIR)
 //-------------------- Importer Espion
-let ESPION_DIR = "Espion-dev"
+let ESPION_DIR = "Espion-CAN-SwiftUI"
 runCommand ("/bin/rm", ["-fr", ESPION_DIR])
 runCommand ("/usr/bin/git", ["clone", "--depth=1", "https://github.com/pierremolinaro/Espion-CAN-SwiftUI.git"])
 fm.changeCurrentDirectoryPath (DISTRIBUTION_DIR + "/" + ESPION_DIR)
@@ -193,9 +193,9 @@ do{
   runCommand ("/bin/rm", ["-fr", "build"])
   runCommand (
     "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
-    [ "-target", "Espion-" + BUILD_KIND.string,
+    [ "-target", "espion-can-swiftui",
       "-configuration", BUILD_KIND.string,
-      "ONLY_ACTIVE_ARCH=YES", "ARCHS=arm64",
+//      "ONLY_ACTIVE_ARCH=YES", "ARCHS=arm64",
       "-verbose"
     ]
   )
