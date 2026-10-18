@@ -225,12 +225,6 @@ struct MainView : View {
     }
     .onAppear () {
       self.mConnection.setCompletionCallBack { self.retrieveWifiCommandCallBack ($0) }
-//      if let data = UserDefaults.standard.data (forKey: "filter.set.array.json.data"),
-//         let array = try? JSONDecoder ().decode ([FilterSet].self, from: data) {
-//        self.mFilterSetArray = array
-//      }else{
-//        ajouterFiltresTrains (self.$mFilterSetArray)
-//      }
     }
     .fileExporter (
       isPresented: self.$mPresentingFileExporterDialog,

@@ -234,10 +234,11 @@ do{
     PRODUCT_NAME = "espion-can-swiftui"
   }
 //-------------------- Copier l'application dans la racine du répertoire de distribution
-  runCommand ("/bin/cp", ["-r", "XCode-DerivedData-Build/Build/Products/" + CONFIGURATION.string + "/" + PRODUCT_NAME + ".app", DISTRIBUTION_DIR])
+  let PRODUCT_RELATIVE_DIR = "XCode-DerivedData-Build/Build/Products/" + CONFIGURATION.string
+  runCommand ("/bin/cp", ["-r", PRODUCT_RELATIVE_DIR + "/" + PRODUCT_NAME + ".app", DISTRIBUTION_DIR])
 //-------------------- Construction package
   let packageFile = PRODUCT_NAME + "-" + VERSION_ESPION + ".pkg"
-  runCommand ("/usr/bin/productbuild", ["--component-compression", "auto", "--component", "XCode-DerivedData-Build/Build/Products//" + CONFIGURATION.string + "/" + PRODUCT_NAME + ".app", "/Applications", packageFile])
+  runCommand ("/usr/bin/productbuild", ["--component-compression", "auto", "--component", PRODUCT_RELATIVE_DIR + "/" + PRODUCT_NAME + ".app", "/Applications", packageFile])
   runCommand ("/bin/cp", [packageFile, DISTRIBUTION_DIR])
 //-------------------- Créer l'archive
   let nomArchive = PRODUCT_NAME + "-" + VERSION_ESPION
@@ -296,7 +297,7 @@ do{
     "-dv",
 //    "--digest-algorithm=sha1,sha256",
     "--verbose=4",
-    DISTRIBUTION_DIR + "/" + ESPION_DIR + "/XCode-DerivedData-Build/Build/Products//" + CONFIGURATION.string + "/" + PRODUCT_NAME + ".app"
+    DISTRIBUTION_DIR + "/" + ESPION_DIR + "/" + PRODUCT_RELATIVE_DIR + "/" + PRODUCT_NAME + ".app"
   ]
   runCommand ("/usr/bin/codesign", argumentsSignatureCode)
 //--- Supprimer les répertoires intermédiaires
