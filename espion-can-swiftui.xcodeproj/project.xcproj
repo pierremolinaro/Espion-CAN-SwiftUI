@@ -13,7 +13,7 @@
   "packages": [
     {
       "kind": "remote",
-      "repository": "https://github.com/pierremolinaro/Swift-Package-Pico-Connection",
+      "repository": "https://github.com/pierremolinaro/Swift-Package-PicoConnection",
       "version": {
         "version-range": "1.0.0..<2.0.0",
       },
@@ -66,7 +66,7 @@
           "product-name": "Sparkle",
           "build-phase": { "build-phase": "frameworks" },
         }, {
-          "package": "Swift-Package-Pico-Connection",
+          "package": "Swift-Package-PicoConnection",
           "product-name": "PicoConnection",
           "build-phase": { "build-phase": "frameworks" },
         },

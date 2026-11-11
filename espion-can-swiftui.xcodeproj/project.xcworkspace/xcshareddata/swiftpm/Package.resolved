@@ -1,5 +1,5 @@
 {
-  "originHash" : "872051e748c1c82df63d4446591082c9df32d426a928e1837a911f5bcfcd85ba",
+  "originHash" : "c77f698028137fe0345f29c15c269b24c219e3c67d2b69af7144abcf536e2369",
   "pins" : [
     {
       "identity" : "sparkle",
@@ -11,9 +11,9 @@
       }
     },
     {
-      "identity" : "swift-package-pico-connection",
+      "identity" : "swift-package-picoconnection",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/pierremolinaro/Swift-Package-Pico-Connection",
+      "location" : "https://github.com/pierremolinaro/Swift-Package-PicoConnection",
       "state" : {
         "revision" : "2146fd6d3065fd90b85e973eb990d23830a17d35",
         "version" : "1.0.0"
